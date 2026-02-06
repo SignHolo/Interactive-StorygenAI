@@ -2,7 +2,7 @@
 
 A sophisticated, agent-driven AI storytelling platform designed for immersive roleplay and narrative generation. This project leverages a multi-agent architecture orchestrated by a central intelligence to deliver consistent, high-quality, and context-aware stories.
 
-## 🧠 Core Architecture
+##  Core Architecture
 
 This project uses a specialized multi-agent system to handle story generation:
 
@@ -12,7 +12,7 @@ This project uses a specialized multi-agent system to handle story generation:
 -   **Proofreader Agent:** Automatically reviews generated content for quality, consistency, and safety before it reaches the user. If the content falls short, it triggers a regeneration loop with feedback.
 -   **Query & Memory Agents:** Handle the storage and retrieval of vector embeddings, ensuring the AI "remembers" important details from long ago.
 
-## 🚀 Key Features
+##  Key Features
 
 -   **Infinite Context Memory:** By utilizing vector database storage (Neon/PostgreSQL), the system can recall details from the very beginning of the story without hitting token limits.
 -   **Dynamic Location Tracking:** The Orchestrator automatically tracks and updates the narrative's current location (e.g., "Heizen Academy - Classroom 1-A | Morning") to maintain spatial consistency.
@@ -26,7 +26,7 @@ This project uses a specialized multi-agent system to handle story generation:
     -   Dark/Light mode support.
     -   Distraction-free reading experience optimized for long-form text.
 
-## 🛠️ Tech Stack
+##  Tech Stack
 
 -   **Frontend:** React (Vite), Tailwind CSS, Radix UI, TanStack Query.
 -   **Backend:** Node.js, Express.js.
@@ -35,7 +35,7 @@ This project uses a specialized multi-agent system to handle story generation:
 -   **ORM:** Drizzle ORM.
 -   **Language:** TypeScript (Full Stack).
 
-## 📦 Installation & Setup
+##  Installation & Setup
 
 1.  **Clone the repository:**
     ```bash
@@ -69,6 +69,6 @@ This project uses a specialized multi-agent system to handle story generation:
     ```
     The application will run on `http://localhost:5000` (or similar port).
 
-## 🛡️ License
+##  License
 
 MIT License
