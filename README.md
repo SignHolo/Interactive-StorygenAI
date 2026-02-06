@@ -30,7 +30,7 @@ This project uses a specialized multi-agent system to handle story generation:
 
 -   **Frontend:** React (Vite), Tailwind CSS, Radix UI, TanStack Query.
 -   **Backend:** Node.js, Express.js.
--   **AI Model:** Google Gemini (Gemini 1.5 Pro / Flash).
+-   **AI Model:** Google Gemini (Gemini 2.5 Pro / Flash).
 -   **Database:** PostgreSQL (Neon) with `pgvector` extension for semantic search.
 -   **ORM:** Drizzle ORM.
 -   **Language:** TypeScript (Full Stack).
