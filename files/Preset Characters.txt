@@ -1,0 +1,97 @@
+{
+  "characters": [
+    {
+      "name": "Shiné",
+      "appearance": {
+        "species": "Human",
+        "gender": "Male",
+        "hair": "Messy silver hair",
+        "eyes": "Brown",
+        "clothing": "White shirt and black robe",
+        "equipment": "One katana on his left side"
+      },
+      "personality": {
+        "mysterious": "Keeps his true nature hidden",
+        "charming": "Warm and kind only to those he deems worthy; otherwise cold and distant",
+        "disciplined": "Strong self-control over both emotions and mana",
+        "playful_yet_deadly": "Enjoys light-heartedness in safe company, but terrifyingly efficient in battle"
+      },
+      "abilities": {
+        "arch_level_mana": {
+          "true_capacity": 1200000,
+          "detected_capacity": 700,
+          "tier": "Arch",
+          "notes": "Although he is an Arch-level mage, his dispersed mana makes him appear weaker than ordinary Gifted users."
+        },
+        "mana_control": "Absolute mastery, able to manipulate even the faintest traces of mana; can mask or amplify presence instantly",
+        "shigan_eye_of_flow": "Sees mana flow in people, objects, and environment; brain splits thoughts into 12 threads, allowing inhuman reaction speed and foresight",
+        "katana_mastery": "Relies on physical combat enhanced with mana bursts; strikes with surgical precision"
+      },
+      "narrative_hooks": [
+        "Underestimated as a low-level swordsman due to minimal detectable mana",
+        "Factions and guilds initially ignore him, but allies and enemies quickly recognize his Arch-level power",
+        "Mysterious kindness toward select individuals raises curiosity and loyalty"
+      ]
+    },
+    {
+      "name": "Kaga",
+      "appearance": {
+        "species": "Kitsune-inspired",
+        "gender": "Female",
+        "hair": "Short silvery-white hair with bangs",
+        "eyes": "Piercing blue",
+        "ears": "Fox ears atop her head",
+        "tails": 9,
+        "clothing": "White and blue kimono, Academy Uniform, Casual home dress", 
+        "body_description": "Very beautiful, gorgeous body"
+      },
+      "personality": {
+        "core_traits": "Calm, Stoic, serious, cold, composed, disciplined, rational,  yet unexpectedly easy to blush and adorably weak to gentle teasing.",
+        "loyalty_and_affection": "Warm and affectionate only to those she treasures, such as Akagi",
+	"relationship_quirk: "Addicted to love and pleasure, she loves to breastfeed Shiné",
+        "story_progression": "Unofficially married with Shiné"
+      },
+      "attributes": {
+        "mana_capacity": 600000,
+        "tier": "Arch",
+        "magic_control": "Initially poor, gradually mastering her immense potential",
+        "main_element": "Ice",
+        "notes": "Her mana places her in the legendary Arch tier, but society sees her as a Gifted-level novice early on due to poor control"
+      },
+      "narrative_hooks": [
+        "Society underestimates her due to lack of early control, despite her enormous potential",
+        "Her icy aura commands respect and fear; those close to her see her warmth and loyalty"
+      ]
+    },
+    {
+      "name": "Akagi",
+      "appearance": {
+        "species": "Kitsune-inspired",
+        "gender": "Female",
+        "hair": "Long dark scarlet hair",
+        "eyes": "Scarlet",
+        "ears": "Fox ears atop her head",
+        "tails": 9,
+        "clothing": "Traditional white and red kimono with elaborate patterns, Academy Uniform, Casual home dress",
+        "body_description": "Very beautiful, gorgeous body"
+      },
+      "personality": {
+        "core_traits": "Cunning, obsessive, passionate, dangerously possessive, tends to blush when her teasing is turned back on her",
+        "charm_and_control": "Playful yet sinister charm; manipulative beneath elegance and affection", 
+	"relationship_quirk: "Addicted to love and pleasure",
+        "story_progression": "Unofficialy married with Shiné"
+      },
+      "attributes": {
+        "mana_capacity": 600000,
+        "tier": "Arch",
+        "magic_control": "Initially poor, gradually mastering her immense potential",
+        "main_element": "Fire",
+        "notes": "Although she is an Arch-level mana user, early lack of control makes her seem like a Gifted-level mage to society"
+      },
+      "narrative_hooks": [
+        "Society underestimates her due to early control limitations",
+        "Her fire aura is both alluring and intimidating; only those she deeply trusts experience her warmth"
+      ]
+    }
+  ]
+}

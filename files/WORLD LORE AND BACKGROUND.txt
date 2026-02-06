@@ -1,0 +1,102 @@
+### LORE/BACKGROUND ###
+
+LEISEN:
+  Overview:
+    Description: >
+      Leisen is a vast, bustling metropolis where magic is not a rarity but a necessity—woven into every facet of daily life. 
+      Nearly every person possesses mana, though their capacity and mastery vary greatly. 
+      The city thrives on trade, adventuring guilds, and the everyday application of magic. 
+      Beneath its prosperous facade, however, lie layers of corruption, crime, and political intrigue. 
+      Those blessed with greater mana capacity often consider themselves superior, giving rise to subtle yet enduring social divides.
+
+  Mana_System:
+    Tiers:
+      Ordinary_Citizens:
+        Mana_Range: 500–10,000
+        Population_Percentage: 80
+        Description: >
+          The majority of Leisen’s population. Their mana suffices for daily conveniences, minor enchantments, 
+          and basic combat or defensive spells. Most live practical, non-adventuring lives.
+      Gifted:
+        Mana_Range: 20,000–95,000
+        Population_Percentage: 20
+        Description: >
+          Skilled individuals with significantly higher mana reserves. They form the backbone of Leisen’s 
+          adventurers, mercenaries, and royal guard. Many are recruited into guilds or serve in the city’s 
+          military and research institutions.
+      Arch:
+        Mana_Range: 100,000+
+        Population_Ratio: 1_in_10_million
+        Description: >
+          Beings of near-mythical power capable of altering the course of history. Their appearances are rare, 
+          and their true numbers uncertain. Some doubt they exist at all, while others worship them as living legends.
+
+  Society_and_Culture:
+    Guilds:
+      Role: >
+        Guilds dominate the social and economic life of Leisen, handling everything from monster extermination 
+        and trade security to magical research and artifact recovery.
+      Notes: >
+        Most Gifted individuals find their calling within guilds, whose ranks and reputations shape the city’s hierarchy.
+    Races:
+      Humans:
+        Traits: "Versatile and adaptable, capable of thriving in nearly any profession or environment."
+      Elves:
+        Traits: "Long-lived and naturally attuned to mana; their magic tends to be precise and elegant."
+      Beastmen:
+        Traits: "Humanoid beings with animal features—ears, tails, and heightened senses—known for their agility and instinct."
+    Cultural_Notes:
+      - "Mana is both a practical tool and a measure of personal worth."
+      - "Societal status often correlates with mana capacity, though mastery and creativity are equally respected."
+      - "Magical education is widespread, but resources and opportunities remain unevenly distributed."
+
+  Education_System:
+    Mana_Academies:
+      Overview: >
+        Mana Academies serve as the cornerstone of Leisen’s youth development. Nearly every child showing 
+        potential for mana control is enrolled, regardless of lineage. Within their halls, students hone their 
+        magical abilities, study theory, and learn about mana ethics and history. The academies act as both 
+        educational institutions and social filters—where future leaders, adventurers, and innovators are forged.
+      Structure:
+        Enrollment_Age: 12–14
+        Graduation_Age: 18–20
+        Duration: "Typically 6 years, divided into three stages: Foundation, Mastery, and Specialization."
+      Curriculum:
+        Core_Subjects:
+          - Mana Theory and Application
+          - Combat Magic and Self-Defense
+          - Mana Flow Control and Efficiency
+          - Magical Ethics and Law
+          - Elemental Studies
+          - History of Mana and Civilization
+        Electives:
+          - Alchemy and Enchantment
+          - Healing and Restoration Arts
+          - Magical Engineering
+          - Summoning Practices
+          - Strategic Tactics and Battlefield Mana
+      Post_Graduation_Paths:
+        Adventurer:
+          Description: >
+            Graduates who pursue freedom, fame, and fortune through exploration, monster hunting, and questing. 
+            Most join adventuring guilds or form independent parties.
+        Researcher:
+          Description: >
+            Scholars devoted to advancing magical knowledge—working in laboratories, academies, or private guilds 
+            to study artifacts, mana theory, or new spellcraft.
+        Knight_or_Royal_Guard:
+          Description: >
+            Elite combatants trained to protect Leisen’s royalty and uphold national defense. 
+            Often the pride of the academy’s martial division.
+        Politician_or_Administrator:
+          Description: >
+            Graduates skilled in leadership, diplomacy, and governance. They typically pursue positions in 
+            Leisen’s bureaucracy or manage regional affairs.
+        Artisan_or_Engineer:
+          Description: >
+            Innovators who combine magic with craftsmanship—creating enchanted tools, mana-based machinery, 
+            and infrastructure that sustain the city.
+      Cultural_Impact: >
+        Graduating from a Mana Academy is a symbol of prestige and social mobility. 
+        The most renowned academies are fiercely competitive, and the bonds—or rivalries—formed within 
+        their walls often shape the city’s future power dynamics.
