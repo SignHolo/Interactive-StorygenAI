@@ -39,8 +39,7 @@ This project uses a specialized multi-agent system to handle story generation:
 
 1.  **Clone the repository:**
     ```bash
-    git clone https://github.com/yourusername/Interactive-StorygenAI.git
-    cd Interactive-StorygenAI
+    git clone https://github.com/SignHolo/Interactive-StorygenAI
     ```
 
 2.  **Install dependencies:**
