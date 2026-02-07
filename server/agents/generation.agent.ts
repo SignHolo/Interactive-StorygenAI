@@ -107,7 +107,7 @@ export class GenerationAgent {
       // Before returning, check if the response itself was blocked.
       if (result.response.promptFeedback?.blockReason === 'SAFETY' || result.response.candidates?.[0]?.finishReason === 'SAFETY') {
         console.warn("[GenerationAgent] Response was blocked due to safety settings.");
-        return "Maaf, generasi respons diblokir karena terdeteksi adanya konten yang melanggar kebijakan. Silakan coba sesuaikan atau ubah prompt Anda.";
+        return "Generation error due to Safety Issue";
       }
       return result.response.text() || "I couldn’t generate a response. Please try again.";
     } catch (error: any) {
@@ -115,7 +115,7 @@ export class GenerationAgent {
 
       // Check for safety-related blocking in the error object itself
       if (error.response?.promptFeedback?.blockReason === 'SAFETY' || error.response?.candidates?.[0]?.finishReason === 'SAFETY') {
-        return "Maaf, generasi respons diblokir karena terdeteksi adanya konten yang melanggar kebijakan. Silakan coba sesuaikan atau ubah prompt Anda.";
+        return "Generation error due to Safety Issue";
       }
 
       if (error.message?.includes("API_KEY")) {
