@@ -44,11 +44,11 @@ The system is orchestrated by a central "brain" that coordinates several special
 
 ---
 
-## 📦 Installation & Setup
+##  Installation & Setup
 
 1.  **Clone & Install**:
     ```bash
-    git clone https://github.com/yourusername/Interactive-StorygenAI.git
+    git clone https://github.com/SignHolo/Interactive-StorygenAI
     cd Interactive-StorygenAI
     npm install
     ```
