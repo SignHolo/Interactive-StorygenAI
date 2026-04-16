@@ -1,74 +1,80 @@
-# Interactive StorygenAI
+# Interactive StorygenAI: An Agentic Storytelling Engine 🧠🎭
 
-A sophisticated, agent-driven AI storytelling platform designed for immersive roleplay and narrative generation. This project leverages a multi-agent architecture orchestrated by a central intelligence to deliver consistent, high-quality, and context-aware stories.
+Interactive StorygenAI is a sophisticated, multi-agent "Harness" designed to power immersive, high-accuracy, long-form storytelling. Unlike simple AI wrappers, this project utilizes a coordinated network of specialized agents to exceed the technical limitations of native LLM context windows, aiming for zero hallucinations and persistent narrative consistency.
 
-## 🧠 Core Architecture
+## 🌟 Core Philosophy
+- **Infinite Context:** Using hybrid vector-based memory (`pgvector`) to maintain story continuity over thousands of messages.
+- **Agentic Precision:** Decoupling generation, memory retrieval, and quality control into specialized agents.
+- **Narrative Persistence:** Tracking world state, locations, and character lore as structured data to prevent "narrative drift".
 
-This project uses a specialized multi-agent system to handle story generation:
+---
 
--   **Orchestrator Agent:** The central "brain" that manages the flow of conversation, handles user requests, and coordinates other agents.
--   **Smart RAG (Retrieval-Augmented Generation):** A dedicated agent (`SmartRagAgent`) that intelligently retrieves and filters past story events. It uses both keyword and semantic search (via `pgvector`) to find relevant memories and then uses a refined LLM prompt to extract *only* the strictly necessary context for the current scene.
--   **Generation Agent:** Specialized in crafting creative, vivid, and engaging narrative prose based on the current context and user input.
--   **Proofreader Agent:** Automatically reviews generated content for quality, consistency, and safety before it reaches the user. If the content falls short, it triggers a regeneration loop with feedback.
--   **Query & Memory Agents:** Handle the storage and retrieval of vector embeddings, ensuring the AI "remembers" important details from long ago.
+## 🧠 Multi-Agent Architecture
+The system is orchestrated by a central "brain" that coordinates several specialized agents:
 
-## 🚀 Key Features
+1.  **Orchestrator Agent**: The central coordination layer that manages the conversation flow and delegates tasks to specialized sub-agents.
+2.  **Smart RAG Agent**: An advanced retrieval-augmented generation layer. It doesn't just fetch context; it uses an LLM to filter and summarize only the *strictly necessary* memories for the current scene, keeping prompts clean and focused.
+3.  **Generation Agent**: Specialized in crafting vivid, engaging narrative prose. Supports specialized logic for **Gemma** models.
+4.  **Proofreader Agent**: The "Editor" that reviews every generated response for consistency, safety, and quality. If it detects a hallucination or error, it triggers a self-correction loop.
+5.  **Classification Agent**: Analyzes user intent to help the orchestrator decide the best course of action (e.g., character interaction vs. world lore query).
+6.  **Memory & Query Agents**: Handle the storage and semantic retrieval of episodic and semantic memories using vector embeddings.
+7.  **Summary Agent**: Periodically condenses historical context into high-level summaries to maintain a secondary layer of long-term awareness.
 
--   **Infinite Context Memory:** By utilizing vector database storage (Neon/PostgreSQL), the system can recall details from the very beginning of the story without hitting token limits.
--   **Dynamic Location Tracking:** The Orchestrator automatically tracks and updates the narrative's current location (e.g., "Heizen Academy - Classroom 1-A | Morning") to maintain spatial consistency.
--   **Self-Correcting Narratives:** The Proofreader Agent ensures that the story stays on track and adheres to your quality standards.
--   **Deep Customization:**
-    -   **Behavior Prompts:** Define the AI's personality (e.g., "Dark Fantasy DM", "Sci-Fi Narrator").
-    -   **Framework Templates:** Control the output structure (dialogue formatting, stat blocks, etc.).
-    -   **Lore & Characters:** Support for loading custom world lore and character presets.
--   **Modern Chat Interface:**
-    -   Built with **React** and **Tailwind CSS**.
-    -   Dark/Light mode support.
-    -   Distraction-free reading experience optimized for long-form text.
+---
 
 ## 🛠️ Tech Stack
+- **Frontend**: React (Vite), Tailwind CSS, TanStack Query, Radix UI.
+- **Backend**: Node.js, Express.js.
+- **AI Providers**: 
+    - **Google Gemini**: Primary support for Gemini 1.5 Pro & Flash.
+    - **OpenAI**: Compatible with GPT-4 and OpenAI-compatible APIs (like Mistral).
+    - **Anthropic**: Support for Claude 3.5 Sonnet & Opus.
+- **Database**: PostgreSQL (Neon) with the `pgvector` extension for semantic memory.
+- **ORM**: Drizzle ORM.
 
--   **Frontend:** React (Vite), Tailwind CSS, Radix UI, TanStack Query.
--   **Backend:** Node.js, Express.js.
--   **AI Model:** Google Gemini (Gemini 1.5 Pro / Flash).
--   **Database:** PostgreSQL (Neon) with `pgvector` extension for semantic search.
--   **ORM:** Drizzle ORM.
--   **Language:** TypeScript (Full Stack).
+---
+
+## 🚀 Key Features
+- **Zero-Hallucination Goal**: Automated proofreading loops that validate AI responses against the established story history.
+- **Dynamic Location Tracking**: Automatically extracts and updates the current narrative location (e.g., "Heizen Academy - Afternoon").
+- **Customizable Playstyles**:
+    - **Behavior Prompts**: Fine-tune the AI's personality (e.g., Dark Fantasy, Sci-Fi, Whimsical).
+    - **Lore & Character Presets**: Load custom world-building data for consistent roleplay.
+- **Per-Agent Model Selection**: Configure different models for each role (e.g., Claude for generation, Gemini Flash for RAG).
+
+---
 
 ## 📦 Installation & Setup
 
-1.  **Clone the repository:**
+1.  **Clone & Install**:
     ```bash
     git clone https://github.com/yourusername/Interactive-StorygenAI.git
     cd Interactive-StorygenAI
-    ```
-
-2.  **Install dependencies:**
-    ```bash
     npm install
     ```
 
-3.  **Environment Configuration:**
-    Create a `.env` file in the root directory (use `.env.template` as a reference if available).
+2.  **Environment Setup**:
+    Create a `.env` file from the template and add your API keys:
     ```env
-    DATABASE_URL=postgres://user:password@host:port/database
-    GEMINI_API_KEY=your_google_gemini_api_key
+    DATABASE_URL=your_postgresql_url
+    GEMINI_API_KEY=your_key
+    OPENAI_API_KEY=your_key (optional)
+    ANTHROPIC_API_KEY=your_key (optional)
     ```
-    *Note: The `DATABASE_URL` must point to a PostgreSQL instance that supports `pgvector` (e.g., Neon.tech).*
 
-4.  **Database Setup:**
-    Push the database schema:
+3.  **Database Configuration**:
+    Enable `pgvector` and push the schema:
     ```bash
+    npx tsx scripts/enable-pgvector.ts
     npm run db:push
     ```
 
-5.  **Run the Application:**
-    Start the development server:
+4.  **Launch**:
     ```bash
     npm run dev
     ```
-    The application will run on `http://localhost:5000` (or similar port).
+
+---
 
 ## 🛡️ License
-
 MIT License

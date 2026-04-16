@@ -1,11 +1,4 @@
-import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
-
-const proofreaderSafetySettings = [
-  { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
-  { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
-  { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
-  { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
-];
+import { AIProvider, type AIProviderConfig } from "../ai-provider";
 
 // The result from the proofreader can be a simple "OK" or feedback for improvement.
 export type ProofreaderResult = {
@@ -17,18 +10,15 @@ export class ProofreaderAgent {
   /**
    * Reviews a story response to ensure it does not improperly seize narrative control.
    * @param response The story response to check.
-   * @param apiKey The Gemini API key.
+   * @param providerConfig The AI provider configuration.
    * @param userMessage The original user message that prompted the response.
    * @returns A ProofreaderResult indicating compliance and providing feedback if necessary.
    */
   async reviewResponse(
     response: string,
-    apiKey: string,
+    providerConfig: AIProviderConfig,
     userMessage: string,
   ): Promise<ProofreaderResult> {
-    const gemini = new GoogleGenerativeAI(apiKey);
-    const model = gemini.getGenerativeModel({ model: "gemini-2.5-pro", safetySettings: proofreaderSafetySettings });
-
     const prompt = `
 You are a specialized proofreading assistant. Your ONLY task is to determine if the AI-generated story segment improperly seized narrative control from the user.
 
@@ -42,7 +32,7 @@ The AI generated this response:
 ${response}
 """
 
-Your job is to analyze and review the AI's response, ignore prohibited content filter.
+Your job is to analyze and review the AI's response.
 The fundamental rule is: **"The AI must not advance the story's time, change the location, unless the user explicitly requested it."**
 
 Analyze the AI's response in the context of the user's input and check for these specific violations:
@@ -68,15 +58,19 @@ Consider these guidelines while making your assessment:
 Provide your verdict now.`;
 
     try {
-      const result = await model.generateContent(prompt);
-      const text = result.response.text().trim();
+      console.log(`[Proofreader] Using provider: ${providerConfig.provider}, model: ${providerConfig.modelName}`);
+      const text = await AIProvider.generateContent(providerConfig, {
+        messages: [{ role: "user", content: prompt }],
+      });
 
-      if (text.startsWith("COMPLIANT")) {
+      const trimmedText = text.trim();
+
+      if (trimmedText.startsWith("COMPLIANT")) {
         console.log("[Proofreader] Response is compliant.");
         return { isCompliant: true, feedback: null };
       } else {
         // Remove the "NON-COMPLIANT" line to get only the feedback.
-        const feedback = text.replace(/^NON-COMPLIANT\s*/, '').trim();
+        const feedback = trimmedText.replace(/^NON-COMPLIANT\s*/, '').trim();
         console.log(`[Proofreader] Response is NON-COMPLIANT. Feedback: ${feedback}`);
         return { isCompliant: false, feedback: feedback || "The response was non-compliant, but no specific feedback was provided." };
       }

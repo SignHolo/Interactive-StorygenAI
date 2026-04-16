@@ -1,6 +1,4 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
-import { ai } from "../gemini"; // Import the initialized genAI instance
-import { safetySettings } from "../gemini"; // Import safetySettings
+import { AIProvider, type AIProviderConfig } from "../ai-provider";
 
 const classificationPrompt = `
 Analyze the following memory log. Your task is to classify it into ONE of the following types: PLOT, CHARACTER, EVENT, LORE, OTHER.
@@ -22,27 +20,23 @@ JSON Response:
 `;
 
 export class ClassificationAgent {
-  constructor() {}
+  constructor() { }
 
-  async classifyMemory(text: string, apiKey?: string): Promise<{ type: string }> {
-    const geminiClient = apiKey ? new GoogleGenerativeAI(apiKey) : ai;
-    const model = geminiClient.getGenerativeModel({
-      model: "gemini-3-flash-preview", // Fast and efficient for classification
-      safetySettings,
-    });
-
+  async classifyMemory(text: string, providerConfig: AIProviderConfig): Promise<{ type: string }> {
     const prompt = classificationPrompt.replace("{{MEMORY_LOG}}", text);
 
     try {
-      const result = await model.generateContent(prompt);
-      const responseText = result.response.text();
-      
+      console.log(`[ClassificationAgent] Using provider: ${providerConfig.provider}, model: ${providerConfig.modelName}`);
+      const responseText = await AIProvider.generateContent(providerConfig, {
+        messages: [{ role: "user", content: prompt }],
+      });
+
       // Clean the response to extract only the JSON part
       const jsonMatch = responseText.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
         throw new Error("Model did not return valid JSON.");
       }
-      
+
       const parsed = JSON.parse(jsonMatch[0]);
       if (parsed && typeof parsed.type === 'string') {
         return { type: parsed.type };

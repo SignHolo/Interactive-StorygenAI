@@ -1,12 +1,9 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { generateStoryResponse, retrieveRelevantMemories, summarizeForMemory } from "./gemini";
-import { SmartRagAgent } from "./agents/SmartRagAgent";
-import { GenerationAgent } from "./agents/generation.agent";
-import { ProofreaderAgent } from "./agents/proofreader.agent";
 import { insertMessageSchema, insertMemoryLogSchema, insertSettingsSchema } from "@shared/schema";
 import { z } from "zod";
+import { AIProvider, buildProviderConfig } from "./ai-provider";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Get all messages
@@ -24,9 +21,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const settings = await storage.getSettings();
       res.json(settings || {
+        aiProvider: "gemini",
         behaviorPrompt: "You are a creative and engaging storyteller. Your responses should be imaginative, vivid, and captivating.",
         frameworkTemplate: "",
         geminiApiKey: null,
+        openaiApiKey: null,
+        openaiBaseUrl: null,
+        anthropicApiKey: null,
+        generationModel: "gemini-3-pro-preview",
+        ragModel: "gemini-2.5-pro",
+        proofreaderModel: "gemini-2.5-pro",
+        utilityModel: "gemini-3-flash-preview",
+        embeddingModel: "embedding-001",
       });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
@@ -77,109 +83,109 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Chat endpoint - main AI interaction with the complete agent flow
+  // Chat endpoint - main AI interaction using OrchestratorAgent
   app.post("/api/chat", async (req, res) => {
     try {
       const { content } = z.object({ content: z.string() }).parse(req.body);
 
-      // Get settings for behavior and API key
+      // Get settings for behavior, API key, and model selection
       const settings = await storage.getSettings();
-      const apiKey = settings?.geminiApiKey || process.env.GEMINI_API_KEY;
+      if (!settings) {
+        return res.status(400).json({ error: "Settings not configured." });
+      }
 
-      if (!apiKey) {
+
+      // Validate that the appropriate API key is configured
+      const provider = settings.aiProvider || "gemini";
+      if (provider === "openai" && !settings.openaiApiKey) {
         return res.status(400).json({
-          error: "Gemini API key not configured. Please add it in Settings.",
+          error: "OpenAI API key not configured. Please add it in Settings.",
+        });
+      }
+      if (provider === "anthropic" && !settings.anthropicApiKey) {
+        return res.status(400).json({
+          error: "Anthropic API key not configured. Please add it in Settings.",
+        });
+      }
+      if ((provider === "gemini" || provider === "gemma") && !settings.geminiApiKey && !process.env.GEMINI_API_KEY) {
+        return res.status(400).json({
+          error: `${provider === "gemma" ? "Gemma" : "Gemini"} API key not configured. Please add it in Settings.`,
         });
       }
 
-      // Store user message first
-      const userMessage = await storage.createMessage({
-        role: "user",
-        content: content,
-      });
-
-      // Get conversation history (now includes the user's message)
+      // Get conversation history
       const allMessages = await storage.getAllMessages();
 
-      // Determine if this is a story mode request (you might have a different condition)
-      // For now, assuming all requests go through the agent flow
-      const isStoryMode = true; // You might want to implement a more sophisticated check
+      // Use OrchestratorAgent to handle the entire flow
+      const { OrchestratorAgent } = await import("./agents/orchestrator.agent");
+      const orchestrator = new OrchestratorAgent();
+      const aiResponse = await orchestrator.handleRequest(content, allMessages);
 
-      let aiResponse: string;
+      // The orchestrator returns the response text IMMEDIATELY after proofreader
+      // approval. Post-processing (location extraction, embedding, DB save) runs
+      // in the background. Construct a provisional response for the UI now.
+      const lastLocation = allMessages.length > 0
+        ? allMessages[allMessages.length - 1].location || "Unknown"
+        : "Unknown";
 
-      if (isStoryMode) {
-        // Initialize agents
-        const smartRagAgent = new SmartRagAgent(apiKey);
-        const generationAgent = new GenerationAgent();
-        const proofreaderAgent = new ProofreaderAgent();
-
-        // Use Query Agent via SmartRagAgent to get relevant memories
-        const filteredContext = await smartRagAgent.handleRequest(content, allMessages, apiKey);
-
-        // Log the full output from SmartRagAgent for testing
-        console.log(`[DEBUG] SmartRagAgent output (filtered canon):\n${filteredContext}`);
-
-        // Prepare context for Generation Agent
-        const chatContext = {
-          behaviorPrompt: settings?.behaviorPrompt || "You are a creative and engaging storyteller. Your responses should be imaginative, vivid, and captivating.",
-          frameworkTemplate: settings?.frameworkTemplate || "",
-          characterPreset: settings?.characterPreset,
-          lore: settings?.lore,
-          relevantMemories: filteredContext ? [filteredContext] : [],
-          conversationHistory: allMessages.slice(-20).map(msg => ({
-            role: msg.role,
-            content: msg.content
-          }))
-        };
-
-        // Generate the response using the Generation Agent
-        aiResponse = await generationAgent.generateStoryResponse(content, chatContext, apiKey);
-
-        // Proofread the response
-        const proofreaderResult = await proofreaderAgent.reviewResponse(aiResponse, apiKey, content);
-
-        if (!proofreaderResult.isCompliant) {
-          // If not compliant, you might want to regenerate or modify the response
-          // For now, we'll return the original response with a note
-          console.log(`[Proofreader] Response was not compliant: ${proofreaderResult.feedback}`);
-          // In a real implementation, you might want to handle non-compliant responses differently
-        }
-      } else {
-        // Fallback to original method if not in story mode
-        const smartRagAgent = new SmartRagAgent(apiKey);
-        aiResponse = await smartRagAgent.handleRequest(content, allMessages, apiKey);
-      }
-
-      // Store AI response
-      const assistantMessage = await storage.createMessage({
-        role: "assistant",
+      const provisionalMessage = {
+        id: `provisional-${Date.now()}`,
+        role: "assistant" as const,
         content: aiResponse,
-      });
+        location: lastLocation,
+        embedding: null,
+        createdAt: new Date(),
+      };
 
-      // Get updated message count after storing assistant message
-      const updatedMessages = await storage.getAllMessages();
-      const totalMessages = updatedMessages.length;
+      // ── Send response to UI immediately ──
+      res.json(provisionalMessage);
 
-      // Create memory log every 4 messages (2 exchanges) - preserve original functionality
-      if (totalMessages % 4 === 0 && totalMessages > 0) {
-        const lastFourMessages = updatedMessages.slice(-4);
-        const conversationSnippet = lastFourMessages
-          .map((m) => `${m.role}: ${m.content}`)
-          .join("\n");
+      // ── Background: Summary + Memory Log (fire-and-forget) ──
+      // Note: We count the user message that the orchestrator already saved + 
+      // the assistant message being saved in background, so use allMessages.length + 2
+      const projectedTotal = allMessages.length + 2;
+      if (projectedTotal % 4 === 0 && projectedTotal > 0) {
+        (async () => {
+          try {
+            // Wait a moment for the background save to finish 
+            // so we can fetch the most recent messages
+            await new Promise(r => setTimeout(r, 3000));
+            const updatedMessages = await storage.getAllMessages();
+            const lastFourMessages = updatedMessages.slice(-4);
+            const conversationSnippet = lastFourMessages
+              .map((m) => `${m.role}: ${m.content}`)
+              .join("\n");
 
-        const summary = await summarizeForMemory(
-          lastFourMessages.map((m) => m.content),
-          apiKey
-        );
+            const { SummaryAgent } = await import("./agents/summary.agent");
+            const summaryAgent = new SummaryAgent();
+            const utilityConfig = buildProviderConfig(settings, "utility");
+            const embeddingConfig = buildProviderConfig(settings, "embedding");
+            const summaryLocation = updatedMessages[updatedMessages.length - 1]?.location || "Unknown";
+            const summary = await summaryAgent.summarizeForMemory(
+              lastFourMessages.map((m) => m.content),
+              summaryLocation,
+              utilityConfig
+            );
 
-        await storage.createMemoryLog({
-          content: conversationSnippet,
-          summary,
-          importance: 5,
-        });
+            let logEmbedding: number[] | undefined;
+            try {
+              logEmbedding = await AIProvider.getEmbedding(embeddingConfig, summary);
+            } catch (e) {
+              console.warn("[Routes] Failed to generate embedding for memory log:", e);
+            }
+
+            await storage.createMemoryLog({
+              content: conversationSnippet,
+              summary,
+              importance: 5,
+              embedding: logEmbedding
+            });
+            console.log("[Routes] Background summary + memory log saved successfully.");
+          } catch (bgError) {
+            console.error("[Routes] Background summary task failed:", bgError);
+          }
+        })();
       }
-
-      res.json(assistantMessage);
     } catch (error: any) {
       console.error("Chat error:", error);
       res.status(500).json({ error: error.message || "Failed to generate response" });

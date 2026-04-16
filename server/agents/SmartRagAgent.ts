@@ -1,22 +1,21 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import type { Message } from "@shared/schema";
 import { QueryAgent } from "./query.agent";
+import { AIProvider, type AIProviderConfig } from "../ai-provider";
 
 export class SmartRagAgent {
-  private gemini: GoogleGenerativeAI;
+  private providerConfig: AIProviderConfig;
+  private embeddingConfig: AIProviderConfig;
   private queryAgent: QueryAgent;
 
-  constructor(apiKey: string) {
-    if (!apiKey) {
-      throw new Error("API key is required to initialize SmartRagAgent");
-    }
-    console.log(`[SmartRagAgent] Initializing with API key: ${apiKey ? '***REDACTED***' : 'undefined'}`);
-    this.gemini = new GoogleGenerativeAI(apiKey);
+  constructor(providerConfig: AIProviderConfig, embeddingConfig: AIProviderConfig) {
+    console.log(`[SmartRagAgent] Initializing with provider: ${providerConfig.provider}, model: ${providerConfig.modelName}`);
+    this.providerConfig = providerConfig;
+    this.embeddingConfig = embeddingConfig;
     this.queryAgent = new QueryAgent();
   }
 
-  async handleRequest(userMessage: string, rawConversationHistory: Message[], clientApiKey: string): Promise<string> {
-    const retrievedMemories = await this.queryAgent.queryMessages(userMessage, clientApiKey);
+  async handleRequest(userMessage: string, rawConversationHistory: Message[], precomputedEmbedding?: number[]): Promise<string> {
+    const retrievedMemories = await this.queryAgent.queryMessages(userMessage, this.embeddingConfig, precomputedEmbedding);
     console.log(`[SmartRagAgent] Total queried messages: ${retrievedMemories.length}`);
 
     const recentHistory = rawConversationHistory.slice(-5);
@@ -30,10 +29,6 @@ export class SmartRagAgent {
 
   /**
    * Filters retrieved memories to find excerpts strictly relevant to the user's query.
-   * @param userMessage The user's current input.
-   * @param retrievedMemories The full memory chunks from a semantic search.
-   * @param recentHistory The last 5 messages for immediate context.
-   * @returns A string containing only the verbatim, relevant excerpts, or an empty string if none are found.
    */
   async filterContext(
     userMessage: string,
@@ -44,21 +39,16 @@ export class SmartRagAgent {
       return ""; // No memories to filter
     }
 
-    // 1. Construct the detailed prompt for the LLM
     const prompt = this.buildFilteringPrompt(userMessage, retrievedMemories, recentHistory);
 
-    // 2. Call the specified Gemini model
-    const model = this.gemini.getGenerativeModel({ model: "gemini-2.5-pro" });
-
-    // Log token usage info
     const estimatedTokenCount = this.estimateTokenCount(prompt);
     console.log(`[SmartRagAgent] Estimated token usage for filterContext: ~${estimatedTokenCount} tokens`);
 
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
+    const response = await AIProvider.generateContent(this.providerConfig, {
+      messages: [{ role: "user", content: prompt }],
+    });
 
-    // 3. Return the clean, filtered text
-    return response.text().trim();
+    return response.trim();
   }
 
   private buildFilteringPrompt(
@@ -132,7 +122,6 @@ Do NOT add headings, explanations, or formatting.
   }
 
   private estimateTokenCount(text: string): number {
-    // Rough estimation: 1 token ≈ 4 characters or 0.75 words
     return Math.ceil(text.length / 4);
   }
 }

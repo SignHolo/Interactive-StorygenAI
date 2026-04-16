@@ -1,12 +1,25 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, timestamp, boolean, integer } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, timestamp, boolean, integer, vector } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-// Settings table - stores app configuration including API key
+// Settings table - stores app configuration including API key and model selection
 export const settings = pgTable("settings", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  // Provider selection
+  aiProvider: text("ai_provider").notNull().default("gemini"), // "gemini", "openai", "anthropic", "gemma"
+  // API Keys
   geminiApiKey: text("gemini_api_key"),
+  openaiApiKey: text("openai_api_key"),
+  openaiBaseUrl: text("openai_base_url"), // Custom base URL for OpenAI-compatible providers
+  anthropicApiKey: text("anthropic_api_key"),
+  // Model selection (per agent role)
+  generationModel: text("generation_model").notNull().default("gemini-3-pro-preview"),
+  ragModel: text("rag_model").notNull().default("gemini-2.5-pro"),
+  proofreaderModel: text("proofreader_model").notNull().default("gemini-2.5-pro"),
+  utilityModel: text("utility_model").notNull().default("gemini-3-flash-preview"),
+  embeddingModel: text("embedding_model").notNull().default("embedding-001"),
+  // Prompts & config
   behaviorPrompt: text("behavior_prompt").notNull().default("You are a creative and engaging storyteller. Your responses should be imaginative, vivid, and captivating."),
   frameworkTemplate: text("framework_template").notNull().default(""),
   characterPreset: text("character_preset").notNull().default(""),
@@ -20,6 +33,7 @@ export const messages = pgTable("messages", {
   role: text("role").notNull(), // 'user' or 'assistant'
   content: text("content").notNull(),
   location: text("location"),
+  embedding: vector("embedding", { dimensions: 3072 }), // pgvector embedding for semantic search (gemini-embedding-001)
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -27,7 +41,7 @@ export const messages = pgTable("messages", {
 export const memoryLogs = pgTable("memory_logs", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   content: text("content").notNull(),
-  embedding: text("embedding"),
+  embedding: vector("embedding", { dimensions: 3072 }), // pgvector embedding for semantic search (gemini-embedding-001)
   location: text("location"),
   summary: text("summary"), // Optional summarized version for RAG
   type: text("type"),
@@ -37,10 +51,10 @@ export const memoryLogs = pgTable("memory_logs", {
 });
 
 export const archivedTranscripts = pgTable("archived_transcripts", {
-    id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-    memory_log_id: varchar("memory_log_id").notNull().references(() => memoryLogs.id, { onDelete: 'cascade' }),
-    transcript_content: text("transcript_content").notNull(),
-    createdAt: timestamp("created_at").notNull().defaultNow(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  memory_log_id: varchar("memory_log_id").notNull().references(() => memoryLogs.id, { onDelete: 'cascade' }),
+  transcript_content: text("transcript_content").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
 // Insert schemas
@@ -61,8 +75,8 @@ export const insertMemoryLogSchema = createInsertSchema(memoryLogs).omit({
 });
 
 export const insertArchivedTranscriptSchema = createInsertSchema(archivedTranscripts).omit({
-    id: true,
-    createdAt: true,
+  id: true,
+  createdAt: true,
 });
 
 // Types

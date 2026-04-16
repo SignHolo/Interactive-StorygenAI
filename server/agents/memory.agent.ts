@@ -1,21 +1,11 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { AIProvider, type AIProviderConfig } from "../ai-provider";
 
 /**
- * Gets embedding for text using Gemini
+ * Gets embedding for text using the configured AI provider
  */
-export async function getEmbedding(text: string, apiKey?: string): Promise<number[]> {
-  const finalApiKey = apiKey || process.env.GEMINI_API_KEY;
-  
-  if (!finalApiKey) {
-    throw new Error("GEMINI_API_KEY not configured");
-  }
-
-  const genAI = new GoogleGenerativeAI(finalApiKey);
-  const model = genAI.getGenerativeModel({ model: "embedding-001" });
-  
+export async function getEmbedding(text: string, providerConfig: AIProviderConfig): Promise<number[]> {
   try {
-    const result = await model.embedContent(text);
-    return result.embedding.values;
+    return await AIProvider.getEmbedding(providerConfig, text);
   } catch (error) {
     console.error("Error getting embedding:", error);
     throw error;
@@ -26,31 +16,24 @@ export async function getEmbedding(text: string, apiKey?: string): Promise<numbe
  * Memory Agent class for managing memories and embeddings
  */
 export class MemoryAgent {
-  private apiKey: string | undefined;
+  private providerConfig: AIProviderConfig | undefined;
 
-  constructor(apiKey?: string) {
-    this.apiKey = apiKey || process.env.GEMINI_API_KEY;
+  constructor(providerConfig?: AIProviderConfig) {
+    this.providerConfig = providerConfig;
   }
 
   async getEmbedding(text: string) {
-    return getEmbedding(text, this.apiKey);
+    if (!this.providerConfig) {
+      throw new Error("AI provider config not set for MemoryAgent");
+    }
+    return getEmbedding(text, this.providerConfig);
   }
 
   async getEmbeddings(texts: string[]): Promise<number[][]> {
-    const finalApiKey = this.apiKey || process.env.GEMINI_API_KEY;
-    if (!finalApiKey) {
-      throw new Error("GEMINI_API_KEY not configured");
+    if (!this.providerConfig) {
+      throw new Error("AI provider config not set for MemoryAgent");
     }
-
-    const genAI = new GoogleGenerativeAI(finalApiKey);
-    const model = genAI.getGenerativeModel({ model: "embedding-001" });
-
-    const embeddings: number[][] = [];
-    for (const text of texts) {
-      const result = await model.embedContent(text);
-      embeddings.push(result.embedding.values);
-    }
-    return embeddings;
+    return AIProvider.batchGetEmbeddings(this.providerConfig, texts);
   }
 
   /**
@@ -58,7 +41,7 @@ export class MemoryAgent {
    */
   async findRelevantMemories(query: string, memoryPool: Array<{ content: string; embedding: string }>, topK: number = 3) {
     const queryEmbedding = await this.getEmbedding(query);
-    
+
     // Calculate cosine similarity between query and all memories
     const similarities = memoryPool.map(memory => {
       const memoryEmbedding = JSON.parse(memory.embedding);

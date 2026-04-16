@@ -1,6 +1,8 @@
 import { MemoryAgent } from "./memory.agent";
 import type { Message, MemoryLog } from "@shared/schema";
 import { storage } from "../storage";
+import type { AIProviderConfig } from "../ai-provider";
+import { searchMessagesByVectorSimilarity } from "../pgvector-utils";
 
 export class QueryAgent {
   private memoryAgent: MemoryAgent;
@@ -9,8 +11,8 @@ export class QueryAgent {
     this.memoryAgent = new MemoryAgent();
   }
 
-  public async queryMessages(query: string, apiKey: string): Promise<Message[]> {
-    this.memoryAgent = new MemoryAgent(apiKey);
+  public async queryMessages(query: string, providerConfig: AIProviderConfig, precomputedEmbedding?: number[]): Promise<Message[]> {
+    this.memoryAgent = new MemoryAgent(providerConfig);
 
     // Get all messages to search through
     const allMessages = await storage.getAllMessages();
@@ -26,8 +28,8 @@ export class QueryAgent {
     const keywordBasedResults = await this.keywordSearch(query, allMessages);
     console.log(`[QueryAgent] Keyword-based search returned: ${keywordBasedResults.length} messages`);
 
-    // Perform semantic search for additional context
-    const semanticSearchResults = await this.semanticSearch(query, allMessages);
+    // Perform semantic search for additional context (reuse precomputed embedding if available)
+    const semanticSearchResults = await this.semanticSearch(query, allMessages, precomputedEmbedding);
     console.log(`[QueryAgent] Semantic search returned: ${semanticSearchResults.length} messages`);
 
     // Combine and deduplicate results, prioritizing keyword matches
@@ -42,55 +44,48 @@ export class QueryAgent {
         addedFromSemantic++;
       }
     }
-
     console.log(`[QueryAgent] Added ${addedFromSemantic} unique messages from semantic search`);
-    console.log(`[QueryAgent] Total unique messages before final limit: ${combinedResults.length}`);
+    console.log(`[QueryAgent] Final combined results: ${combinedResults.length} messages`);
 
-    // Apply final limit and return
-    const finalResults = combinedResults.slice(0, 100);
-    console.log(`[QueryAgent] Final result count: ${finalResults.length} messages`);
-
-    return finalResults;
+    return combinedResults;
   }
 
   private async keywordSearch(query: string, allMessages: Message[]): Promise<Message[]> {
-    // Extract keywords from the query (simple approach - could be enhanced with NLP)
     const keywords = this.extractKeywords(query);
+    console.log(`[QueryAgent] Extracted keywords: ${JSON.stringify(keywords)}`);
 
     if (keywords.length === 0) {
-      return [];
+      return allMessages.slice(-5);
     }
 
-    // Determine limit based on number of keywords
-    const keywordLimit = keywords.length < 5 ? 15 : 10;
-
-    // Find messages for each keyword separately to ensure variety
-    const allKeywordMatches = new Map<string, Message[]>(); // keyword -> messages map
+    // Search for each keyword independently
+    const keywordLimit = Math.ceil(15 / keywords.length);
+    const allKeywordMatches = new Map<string, Message[]>();
 
     for (const keyword of keywords) {
-      const matches = allMessages.filter(message => {
-        const lowerContent = message.content.toLowerCase();
-        return lowerContent.includes(keyword.toLowerCase());
-      });
+      const matches = allMessages.filter(msg =>
+        msg.content.toLowerCase().includes(keyword.toLowerCase())
+      );
 
-      // Sort by relevance (length of message as a simple heuristic - shorter more specific)
-      const sortedMatches = matches.sort((a, b) => a.content.length - b.content.length);
+      // Sort matches by recency (most recent first)
+      const sortedMatches = matches.sort((a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
 
-      // Take the top matches for this keyword
       allKeywordMatches.set(keyword, sortedMatches.slice(0, keywordLimit));
     }
 
     // Collect all unique messages across all keywords
     const uniqueMessages = new Map<string, Message>(); // messageId -> Message
 
-    for (const [keyword, matches] of allKeywordMatches) {
-      for (const message of matches) {
+    allKeywordMatches.forEach((matches) => {
+      matches.forEach((message) => {
         // Ensure each message is only added once, even if it matches multiple keywords
         if (!uniqueMessages.has(message.id)) {
           uniqueMessages.set(message.id, message);
         }
-      }
-    }
+      });
+    });
 
     return Array.from(uniqueMessages.values());
   }
@@ -110,31 +105,27 @@ export class QueryAgent {
       .filter(word => word.length > 2 && !stopWords.has(word));
 
     // Return unique keywords
-    return [...new Set(words)];
+    return Array.from(new Set(words));
   }
 
-  private async semanticSearch(query: string, allMessages: Message[]): Promise<Message[]> {
+  private async semanticSearch(query: string, allMessages: Message[], precomputedEmbedding?: number[]): Promise<Message[]> {
     try {
-      // Use semantic search to find relevant messages
-      const queryEmbedding = await this.memoryAgent.getEmbedding(query);
-      const messageEmbeddings = await this.memoryAgent.getEmbeddings(allMessages.map(m => m.content));
-
-      const similarities = allMessages.map((message, i) => ({
-        message,
-        similarity: this.memoryAgent.cosineSimilarity(queryEmbedding, messageEmbeddings[i]),
-      }));
-
-      // Sort by similarity and return top results (without altering the original messages)
-      const SIMILARITY_THRESHOLD = 0.1; // Very low threshold to get more results
-      const relevantMessages = similarities
-        .filter(s => s.similarity > SIMILARITY_THRESHOLD)
-        .sort((a, b) => b.similarity - a.similarity)
-        .map(s => s.message);
-
-      // Return up to 15 most relevant messages (leaving room for keyword matches)
-      return relevantMessages.slice(0, 15);
+      // 1. Use precomputed embedding if available, otherwise generate one
+      const queryEmbedding = precomputedEmbedding || await this.memoryAgent.getEmbedding(query);
+      if (precomputedEmbedding) {
+        console.log(`[QueryAgent] Reusing precomputed embedding for semantic search.`);
+      }
+      
+      // 2. Search database utilizing pgvector `<=>` index directly
+      console.log(`[QueryAgent] Querying pgvector for top matches...`);
+      const results = await searchMessagesByVectorSimilarity(queryEmbedding, 15);
+      
+      // Because searchMessagesByVectorSimilarity might return raw messages directly from query,
+      // we just return them. Keyword search will layer on top.
+      return results as Message[];
+      
     } catch (error) {
-      console.error("Semantic search failed, falling back to keyword search:", error);
+      console.warn("PGVector semantic search failed (likely DB issue or missing embedding array), falling back to keyword search:", error);
       return []; // Return empty array, keyword search will provide results
     }
   }
